@@ -25,7 +25,7 @@ export const DEFAULT_MODEL: ModelVersion = "v5";
 export interface RealTimeVADCallbacks {
   onFrameProcessed: (
     probabilities: SpeechProbabilities,
-    frame: Float32Array
+    frame: Float32Array,
   ) => void;
   onVADMisfire: () => void;
   onSpeechStart: () => void;
@@ -50,7 +50,7 @@ export interface RealTimeVADOptions
  * Build default options based on chosen model
  */
 export function getDefaultRealTimeVADOptions(
-  model: ModelVersion = DEFAULT_MODEL
+  model: ModelVersion = DEFAULT_MODEL,
 ): RealTimeVADOptions {
   const frameOpts =
     model === "v5"
@@ -93,7 +93,7 @@ export class RealTimeVAD {
    */
   protected constructor(
     private options: RealTimeVADOptions,
-    modelInstance: any
+    modelInstance: any,
   ) {
     this.modelInstance = modelInstance;
     this.frameSize = options.frameSamples;
@@ -109,7 +109,7 @@ export class RealTimeVAD {
         preSpeechPadFrames: options.preSpeechPadFrames,
         minSpeechFrames: options.minSpeechFrames,
         submitUserSpeechOnPause: options.submitUserSpeechOnPause,
-      }
+      },
     );
 
     if (options.sampleRate > 16000) {
@@ -127,7 +127,7 @@ export class RealTimeVAD {
   static async new(
     ort: any,
     modelFetcher: () => Promise<ArrayBuffer>,
-    opts: Partial<RealTimeVADOptions> = {}
+    opts: Partial<RealTimeVADOptions> = {},
   ): Promise<RealTimeVAD> {
     const fullOpts: RealTimeVADOptions = {
       ...getDefaultRealTimeVADOptions(opts.model),
@@ -158,7 +158,10 @@ export class RealTimeVAD {
   }
 
   /** Feed raw audio (any sample rate) into the VAD */
-  async processAudio(audioData: Float32Array): Promise<void> {
+  async processAudio(
+    audioData: Float32Array,
+    handleEvent: (event: FrameProcessorEvent) => any,
+  ): Promise<void> {
     if (!this.active) return;
 
     let data = audioData;
@@ -185,7 +188,7 @@ export class RealTimeVAD {
     while (this.buffer.length >= this.frameSize) {
       const frame = this.buffer.subarray(0, this.frameSize);
       this.buffer = this.buffer.subarray(this.frameSize);
-      await this.frameProcessor.process(frame, this.handleEvent);
+      await this.frameProcessor.process(frame, handleEvent);
     }
   }
 
